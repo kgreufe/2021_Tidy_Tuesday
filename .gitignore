@@ -41,7 +41,3 @@ vignettes/*.pdf
 # General .Rproj file 
 .Rproj
 
-# image files
-/**.jpg
-/**.jpeg
-/**.png
