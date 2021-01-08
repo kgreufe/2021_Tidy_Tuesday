@@ -66,7 +66,9 @@ transit_cost %>%
   theme(text = element_text(family = "Segoe UI Light"), 
         plot.title = element_text(face = "bold"),
         plot.subtitle = element_text(size = 10.5), 
+        axis.text = element_text(color = "black"),
+        axis.title.x = element_text(face = "bold"), 
         panel.background =  element_blank())
 
 
-
+# ggsave("21-0105_Transit_Costs.jpeg", dpi = "retina")
