@@ -153,12 +153,12 @@ artwork %>%
         plot.caption = element_text(size = 8, family = "Corbel Light"), 
         panel.background = element_blank(), 
         panel.grid.major = element_line(color = "grey", size = 0.25), 
-        panel.grid.minor.y = element_line(color = "light grey", size = 0.1)) +
+        panel.grid.minor.y = element_line(color = "light grey", size = 0.1), 
+        plot.subtitle = element_markdown(family = "Corbel Light", size = 13)) +
   labs(y = "% of Collection", 
        x = "Artist Birth Decade", 
        title = "The Tate Gallery Collection Skews Towards Artists Born Early 20th Century", 
-       subtitle = "\nA full 15% of the collection is from artists born in the 1930s\n\n<span style='font-size:11pt'>Sepal width vs. sepal length for three *Iris*
-    species</span>", 
+       subtitle = "<br>A full **15%** of the collection is from artists born in the 1930s<br><br><span style='font-size:9pt'>The largest portion of the entire collection is by artist Joseph Mallord William Turner, born in 1775, and accounts for 53% of the total collection.<br>That collection removed from analysis here as it is an outlier and buries other trends.</span>", 
        caption = "Plot by @greufek\nData from Tate Gallery Collection (github.com/tategallery/collection)\nvia Tidy Tuesday (github.com/rfordatascience/tidytuesday)") 
 
 
@@ -169,5 +169,6 @@ artwork %>%
 artwork %>% 
   count(artist_id, sort = TRUE) %>% 
   mutate(pct = n / sum(n))
-artists %>% filter(id == 558) %>% pull(name)
+artists %>% filter(id == 558) 
 
+# ggsave(filename = "21-0112_Art_Collections/21-0112_tate_collection.jpeg", dpi = "retina", device = "jpeg")
