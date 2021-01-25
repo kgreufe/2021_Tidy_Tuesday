@@ -15,7 +15,9 @@ library(sf)
 library(tigris)
 library(scales)
 library(extrafont)
-library(ggtext)
+library(patchwork)
+# library(ggtext)
+library(cowplot)
 # extrafont::loadfonts()
 
 
@@ -71,13 +73,12 @@ kenya_sf <-
 
 ## Reduce Data
 
-Let's create four heat maps, one for each of the top five crops.
+Let's create four heat maps, one for each of crop.
 
 ```{r crops reduce}
-# what are the top five crops? 
 # fortunately, there's a "KENYA" total row
 
-crops_top_five <- 
+crops_names <- 
   crops %>% 
   filter(str_detect(sub_county, regex("kenya", ignore_case = TRUE))) %>% 
   select(-sub_county) %>% 
@@ -85,21 +86,24 @@ crops_top_five <-
   arrange(desc(value)) %>% 
   # remove "farming" as it's unclear what exactly that means.  Definition is "Population growing farming crops"
   filter(!str_detect(name, regex("farming", ignore_case = TRUE))) %>% 
-  head(5) %>% 
+  # head(5) %>% 
   pull(name) %>% 
   sort()
 
-# crops_top_five
+crops_names_format <- 
+  crops_top_five %>% 
+  str_replace("_", " ") %>% 
+  str_to_title()
 
 crop_values <- 
   crops %>% 
   # remove kenya total
   filter(!str_detect(sub_county, regex("kenya", ignore_case = TRUE))) %>% 
-  select(sub_county, any_of(crops_top_five)) %>% 
+  select(sub_county, any_of(crops_names)) %>% 
   # mutate(across(.fns = ~ replace_na(., 0))) %>% 
   pivot_longer(!sub_county, 
                names_to = "crop") %>% 
-  # mutate(crop = as.factor(crop)) %>% 
+  mutate(value = if_else(!is.na(value), value / 1000, value)) %>% 
   split(x = ., f = .$crop)
 
 
@@ -130,43 +134,79 @@ kenya_ggplot <-
     ggplot(data = .data) +
       geom_sf(aes(fill = value), 
               color = "white", 
-              size = 0.5) + 
+              size = 0.2) + 
       coord_sf() + 
-      scale_fill_viridis_c(option = "E", 
-                           labels = scales::comma) + 
-      labs(fill = "# Households",
-           subtitle = "\nData from the 2019 Kenya Population and Housing Census\n", 
-           caption = "Plot by @greufek\nData from rKenyaCensus (github.com/Shelmith-Kariuki/rKenyaCensus) \nvia Tidy Tuesday (github.com/rfordatascience/tidytuesday)\nKenya Counties shapefile via openAfrica ( africaopendata.org/dataset/kenya-counties-shapefile)") + 
+      scale_fill_viridis_c(option = "E", na.value = "light gray") + 
+      labs(fill = "# HH (k)") + 
       theme_void() +
       theme(
-        plot.caption = element_text(size = 7.5), 
         legend.text = element_text(family = "Consolas"), 
-        plot.title = element_markdown(family = "Verdana", 
-                                      size = 12), 
-        plot.subtitle = element_text(family = "Verdana", 
-                                     size = 10)) 
+        plot.title = element_text(family = "Verdana", 
+                                  size = 12), 
+        
+        # plot.margin = margin(20, 20, 20 , 20), 
+        legend.position = "right") 
   }
 ```
 
-## Map to create all five plots and save them
+## Map to create plots and save them
 
 ```{r full plots}
-dte <- Sys.Date()
+
 
 
 map2(.x = crop_values, 
-     .y = crops_top_five,
+     .y = crops_names_format,
      .f = ~ geo_join(spatial_data = kenya_sf, 
                      data_frame = .x, 
                      by_sp = "Name", 
                      by_df = "sub_county", 
                      how = "inner") %>% 
-       kenya_ggplot(.data = .) + 
-       labs(title = str_c("**", str_to_title(.y), "** Production in Kenya by County and Household Count")) +
-       ggsave(filename = str_c("output/", dte, "_kenya_census_map_", .y, ".jpeg"), 
-              dpi = "retina", 
-              device = "jpeg", 
-              scale = 1.5)
+       {kenya_ggplot(.data = .) + 
+           labs(title = as.character(.y))} %>% 
+       assign(value = ., 
+              x = str_c("kenya_plot_", str_to_lower(str_replace(as.character(.y), " ", "_"))), 
+              envir = globalenv())
+     
 )
 ```
+
+
+## combine plots to a grid
+
+```{r}
+grid <- 
+  (kenya_plot_avocado | kenya_plot_cashew_nut | kenya_plot_citrus) / 
+  (kenya_plot_coconut | kenya_plot_coffee | kenya_plot_khat_miraa) / 
+  (kenya_plot_macadamia | kenya_plot_mango | kenya_plot_tea)
+
+final_plot <- 
+  grid +
+  plot_layout(nrow = 3) +
+  plot_annotation(
+    title = "Permant Crop Production in Kenya", 
+    subtitle = "\nBy county and Household Count\nData from the 2019 Kenya Population and Housing Census\n", 
+    caption = "Plot by @greufek\nData from rKenyaCensus via Tidy Tuesday\nKenya Counties shapefile via openAfrica -- africaopendata.org/dataset/kenya-counties-shapefile") +  
+  theme(
+    # plot.margin = margin(10, 0, 25, 0), 
+    plot.title = element_text(family = "Verdana", size = 16, hjust = 0),
+    plot.subtitle = element_text(family = "Verdana", size = 12, hjust =  0), 
+    plot.caption = element_text(family = "Verdana", hjust = 0.95, size = 8) 
+  )
+```
+
+## Save plot 
+
+```{r save plot}
+dte <- Sys.Date()
+
+ggsave(plot = final_plot,
+       filename = str_c("output/", dte, "_kenya_census_map_crops.jpeg"),
+       dpi = "retina",
+       device = "jpeg", 
+       width = 7, 
+       height = 9, 
+       units = "in")
+```
+
 
