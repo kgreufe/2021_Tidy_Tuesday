@@ -96,7 +96,7 @@ crop_values <-
   # remove kenya total
   filter(!str_detect(sub_county, regex("kenya", ignore_case = TRUE))) %>% 
   select(sub_county, any_of(crops_top_five)) %>% 
-  mutate(across(.fns = ~ replace_na(., 0))) %>% 
+  # mutate(across(.fns = ~ replace_na(., 0))) %>% 
   pivot_longer(!sub_county, 
                names_to = "crop") %>% 
   # mutate(crop = as.factor(crop)) %>% 
