@@ -13,7 +13,7 @@ library(tidytuesdayR)
 library(janitor)
 library(sf)
 library(tigris)
-library(scales)
+# library(scales)
 library(extrafont)
 library(patchwork)
 # library(ggtext)
@@ -21,7 +21,7 @@ library(cowplot)
 # extrafont::loadfonts()
 
 
-setwd("21-0119_Kenya_Census")
+# setwd("21-0119_Kenya_Census")
 ```
 
 ## Get Data
@@ -91,7 +91,7 @@ crops_names <-
   sort()
 
 crops_names_format <- 
-  crops_top_five %>% 
+  crops_names %>% 
   str_replace("_", " ") %>% 
   str_to_title()
 
@@ -152,8 +152,6 @@ kenya_ggplot <-
 ## Map to create plots and save them
 
 ```{r full plots}
-
-
 
 map2(.x = crop_values, 
      .y = crops_names_format,
