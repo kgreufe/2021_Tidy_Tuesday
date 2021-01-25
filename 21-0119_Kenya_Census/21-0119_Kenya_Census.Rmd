@@ -1,0 +1,23 @@
+---
+title: ''
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(tidytuesdayR)
+# library(extrafont)
+```
+
+## Get Data
+
+```{r}
+tt <- tidytuesdayR::tt_load("2021", week = 4)
+
+tt
+```
+
