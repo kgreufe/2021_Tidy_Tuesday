@@ -17,7 +17,7 @@ library(tigris)
 library(extrafont)
 library(patchwork)
 # library(ggtext)
-library(cowplot)
+# library(cowplot)
 # extrafont::loadfonts()
 
 
