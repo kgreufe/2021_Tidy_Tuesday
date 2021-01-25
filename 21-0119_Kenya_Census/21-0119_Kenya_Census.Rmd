@@ -184,13 +184,14 @@ final_plot <-
   plot_annotation(
     title = "Permant Crop Production in Kenya", 
     subtitle = "\nBy county and Household Count\nData from the 2019 Kenya Population and Housing Census\n", 
-    caption = "Plot by @greufek\nData from rKenyaCensus via Tidy Tuesday\nKenya Counties shapefile via openAfrica -- africaopendata.org/dataset/kenya-counties-shapefile") +  
+    caption = "Plot by @greufek\nData from rKenyaCensus via Tidy Tuesday\nKenya Counties shapefile via openAfrica -- africaopendata.org/dataset/kenya-counties-shapefile", 
+    theme =   
   theme(
     # plot.margin = margin(10, 0, 25, 0), 
-    plot.title = element_text(family = "Verdana", size = 16, hjust = 0),
+    plot.title = element_text(family = "Verdana", size = 24, hjust = 0),
     plot.subtitle = element_text(family = "Verdana", size = 12, hjust =  0), 
     plot.caption = element_text(family = "Verdana", hjust = 0.95, size = 8) 
-  )
+  ))
 ```
 
 ## Save plot 
