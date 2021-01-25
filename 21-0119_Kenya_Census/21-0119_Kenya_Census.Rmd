@@ -10,7 +10,16 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(tidytuesdayR)
-# library(extrafont)
+library(janitor)
+library(sf)
+library(tigris)
+library(scales)
+library(extrafont)
+library(ggtext)
+# extrafont::loadfonts()
+
+
+setwd("21-0119_Kenya_Census")
 ```
 
 ## Get Data
@@ -18,6 +27,146 @@ library(tidytuesdayR)
 ```{r}
 tt <- tidytuesdayR::tt_load("2021", week = 4)
 
-tt
+households <- 
+  clean_names(tt$households) %>% 
+  mutate(across(where(is_character), str_trim))
+crops <- clean_names(tt$crops)
+gender <- clean_names(tt$gender)
+
+```
+
+## Investigate
+
+I'm curious in trying some mapping stuff, as I'm not super familiar/comfortable with it in R.  
+Maybe create some sort of heat map by prevalence of households for each county in Kenya?
+
+Do maps exist to this detail already in ggplot2/maps
+
+```{r}
+kenya_map <- map_data("world", region = "kenya") %>% as_tibble()
+
+
+ggplot(kenya_map, aes(long, lat, group = group)) +
+  geom_polygon(fill= "white", color = "black") + 
+  coord_quickmap()
+
+
+```
+
+ggplot doesn't go to the level of counties, at least not that I could find.
+
+Found a shapefile on arcgis.com (	http://www.arcgis.com/home/item.html?id=5f83ca29e5b849b8b05bc0b281ae27bc) via africaopendata.org(https://africaopendata.org/dataset/kenya-counties-shapefile)
+
+```{r load shapefile}
+kenya_sf <- 
+  sf::read_sf("kenya_counties_shapefile/County.shp") %>% 
+  mutate(Name = str_to_upper(Name))
+
+
+# edit df so it joins correctly
+kenya_sf <- 
+  kenya_sf %>% 
+  mutate(Name = if_else(str_detect(Name, "MURANG"), "MURANG'A", Name))
+```
+
+## Reduce Data
+
+Let's create four heat maps, one for each of the top five crops.
+
+```{r crops reduce}
+# what are the top five crops? 
+# fortunately, there's a "KENYA" total row
+
+crops_top_five <- 
+  crops %>% 
+  filter(str_detect(sub_county, regex("kenya", ignore_case = TRUE))) %>% 
+  select(-sub_county) %>% 
+  pivot_longer(everything()) %>% 
+  arrange(desc(value)) %>% 
+  # remove "farming" as it's unclear what exactly that means.  Definition is "Population growing farming crops"
+  filter(!str_detect(name, regex("farming", ignore_case = TRUE))) %>% 
+  head(5) %>% 
+  pull(name) %>% 
+  sort()
+
+# crops_top_five
+
+crop_values <- 
+  crops %>% 
+  # remove kenya total
+  filter(!str_detect(sub_county, regex("kenya", ignore_case = TRUE))) %>% 
+  select(sub_county, any_of(crops_top_five)) %>% 
+  mutate(across(.fns = ~ replace_na(., 0))) %>% 
+  pivot_longer(!sub_county, 
+               names_to = "crop") %>% 
+  # mutate(crop = as.factor(crop)) %>% 
+  split(x = ., f = .$crop)
+
+
+```
+
+
+## Join and plot
+
+```{r test}
+# test with avocado
+
+foo <- crop_values$avocado
+
+
+foo <- geo_join(
+  spatial_data = kenya_sf, 
+  data_frame = foo, 
+  by_sp = "Name", 
+  by_df = "sub_county", 
+  how = "inner"
+)
+```
+
+```{r ggplot function}
+
+kenya_ggplot <- 
+  function(.data) {
+    ggplot(data = .data) +
+      geom_sf(aes(fill = value), 
+              color = "white", 
+              size = 0.5) + 
+      coord_sf() + 
+      scale_fill_viridis_c(option = "E", 
+                           labels = scales::comma) + 
+      labs(fill = "# Households",
+           subtitle = "\nData from the 2019 Kenya Population and Housing Census\n", 
+           caption = "Plot by @greufek\nData from rKenyaCensus (github.com/Shelmith-Kariuki/rKenyaCensus) \nvia Tidy Tuesday (github.com/rfordatascience/tidytuesday)\nKenya Counties shapefile via openAfrica ( africaopendata.org/dataset/kenya-counties-shapefile)") + 
+      theme_void() +
+      theme(
+        plot.caption = element_text(size = 7.5), 
+        legend.text = element_text(family = "Consolas"), 
+        plot.title = element_markdown(family = "Verdana", 
+                                      size = 12), 
+        plot.subtitle = element_text(family = "Verdana", 
+                                     size = 10)) 
+  }
+```
+
+## Map to create all five plots and save them
+
+```{r full plots}
+dte <- Sys.Date()
+
+
+map2(.x = crop_values, 
+     .y = crops_top_five,
+     .f = ~ geo_join(spatial_data = kenya_sf, 
+                     data_frame = .x, 
+                     by_sp = "Name", 
+                     by_df = "sub_county", 
+                     how = "inner") %>% 
+       kenya_ggplot(.data = .) + 
+       labs(title = str_c("**", str_to_title(.y), "** Production in Kenya by County and Household Count")) +
+       ggsave(filename = str_c("output/", dte, "_kenya_census_map_", .y, ".jpeg"), 
+              dpi = "retina", 
+              device = "jpeg", 
+              scale = 1.5)
+)
 ```
 
