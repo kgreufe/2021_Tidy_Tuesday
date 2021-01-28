@@ -1,0 +1,64 @@
+---
+title: ''
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(tidytuesdayR)
+library(janitor)
+library(here)
+# library(scales)
+library(extrafont)
+# library(patchwork)
+
+# setwd("21-0119_Kenya_Census")
+```
+
+## Get Data
+
+```{r get data}
+tt <- tidytuesdayR::tt_load("2021", week = 5)
+
+```
+
+## Investigate
+
+
+
+```{r}
+
+```
+
+## Wrangle
+
+```{r}
+
+```
+
+
+## Plot
+
+```{r}
+
+```
+
+## Save plot 
+
+```{r save plot, eval=FALSE}
+dte <- Sys.Date()
+
+ggsave(plot = last_plot(),
+       filename = str_c("output/", dte, "_kenya_census_map_crops.jpeg"),
+       dpi = "retina",
+       device = "jpeg", 
+       width = 7, 
+       height = 9, 
+       units = "in")
+```
+
+
