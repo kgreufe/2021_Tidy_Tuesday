@@ -8,15 +8,20 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+library(here)
 library(tidyverse)
 library(tidytuesdayR)
 library(janitor)
-library(here)
-# library(scales)
+library(sf)
+library(tigris)
+library(scales)
 library(extrafont)
+library(ggtext)
 # library(patchwork)
 
-# setwd("21-0119_Kenya_Census")
+here::i_am("21-0126_Plastic_Pollution/21-0126_Plastic_Pollution.Rmd")
+
+options(scipen = 999)
 ```
 
 ## Get Data
@@ -24,41 +29,125 @@ library(extrafont)
 ```{r get data}
 tt <- tidytuesdayR::tt_load("2021", week = 5)
 
+plastics <- tt$plastics
 ```
+
+```{r load shapefile}
+global_map <- 
+  sf::read_sf(
+    here("21-0126_Plastic_Pollution", 
+         "countries_shapefile", 
+         "99bfd9e7-bb42-4728-87b5-07f8c8ac631c2020328-1-1vef4ev.lu5nk.shp")
+  ) %>% 
+  clean_names() %>% 
+  mutate(cntry_name = str_to_lower(cntry_name), 
+         cntry_name = if_else(str_detect(cntry_name, "united states"), "united states of america", cntry_name))
+
+```
+
 
 ## Investigate
 
-
-
 ```{r}
-
 ```
 
 ## Wrangle
 
+Filter down to just those countries that have data in both years (2019, 2020)
 ```{r}
+country_fltr <- 
+  plastics %>% 
+  count(country, year) %>% 
+  group_by(country) %>% 
+  filter(n() > 1) %>% 
+  pull(country) %>% 
+  unique()
+
+plastics <- 
+  plastics %>% 
+  filter(country %in% country_fltr)
+```
+
+
+Aggregate grand totals. 
+
+Filter out the "grand total" rows as those don't appear to be consistent across years. I'll run the calculation manually for each year. "null" parent_company appears to be unknowns. 
+
+```{r}
+plastics_agg <- 
+  plastics %>% 
+  filter(!str_detect(parent_company, regex("grand total", ignore_case = TRUE))) %>% 
+  count(country, year, wt = grand_total) %>% 
+  pivot_wider(country, names_from = year, values_from = n) %>% 
+  clean_names() %>% 
+  mutate(diff = x2019 - x2020, 
+         diffmod = diff %/% 1000, 
+         country = str_to_lower(country)) %>% 
+  #filter out switzerland -- quite an outlier and it appears to be from a vast difference in counting year over year
+  filter(!str_detect(country, "switzerland"))
+
 
 ```
+
+## Join to shapefile
+
+```{r join shapefile}
+data_join <- 
+  tigris::geo_join(
+    spatial_data = global_map, 
+    data_frame = plastics_agg, 
+    by_sp = "cntry_name", 
+    by_df = "country",
+    how = "left"
+  )
+
+
+```
+
 
 
 ## Plot
 
 ```{r}
-
+ggplot(data_join) + 
+  geom_sf(aes(fill = diffmod), color = "white", size = .33) + 
+  coord_sf(ylim = c(-55, 80)
+           # , xlim = c(-180, -35)
+           ) +
+  theme_void() + 
+  scale_fill_viridis_b(n.breaks = 9, 
+                       na.value = "lightgray", 
+                       option = "A", 
+                       direction = 1) + 
+  theme(text = element_text(family = "Garamond"), 
+        legend.position = "bottom", 
+        legend.key.width = unit(2.5, "cm"), 
+        legend.text = element_text(family = "Consolas"), 
+        legend.title = element_text(size = 10), 
+        plot.margin = margin(10, 10, 10, 10), 
+        plot.title = element_text(face = "bold"), 
+        plot.subtitle = element_markdown(), 
+        plot.caption = element_text(size = 8)) + 
+  labs(fill = "Plastics Count\nDifference\n(Thousands)", 
+       title = "Plastic Pollution Got Worse In 2020", 
+       subtitle = "<br>Difference from 2019 to 2020 by the global brand audit of plastic pollution by *Break Free From Plastic*<br>", 
+       caption = "\nPlot by @greufek\nData from Break Free From Plastic via Tidy Tuesday")
 ```
 
 ## Save plot 
 
-```{r save plot, eval=FALSE}
+```{r save plot}
 dte <- Sys.Date()
 
 ggsave(plot = last_plot(),
-       filename = str_c("output/", dte, "_kenya_census_map_crops.jpeg"),
+       filename = here("21-0126_Plastic_Pollution", "output", str_c(dte, "_plastic_pollution_.jpeg")), 
+                #str_c("output/", dte, "_kenya_census_map_crops.jpeg"),
        dpi = "retina",
        device = "jpeg", 
-       width = 7, 
-       height = 9, 
+       scale = .9, 
        units = "in")
+
+
 ```
 
 
