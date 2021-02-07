@@ -1,0 +1,74 @@
+---
+title: ''
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+options(scipen = 999)
+
+library(tidyverse)
+library(tidytuesdayR)
+library(here)
+library(janitor)
+library(extrafont)
+# library(scales)
+# library(ggtext)
+# library(patchwork)
+
+here::i_am("21-0202_College_Enrollment.Rmd")
+
+```
+
+## Get Data
+
+```{r get data}
+tt <- tidytuesdayR::tt_load("2021", week = 6)
+
+hs_students <- tt$hs_students
+
+```
+
+
+
+## Investigate
+
+```{r}
+
+```
+
+## Wrangle
+
+
+```{r}
+
+```
+
+
+
+## Plot
+
+```{r}
+
+```
+
+## Save plot 
+
+```{r save plot}
+dte <- Sys.Date()
+
+ggsave(plot = last_plot(),
+       filename = here("21-0126_Plastic_Pollution", "output", str_c(dte, "_plastic_pollution_.jpeg")), 
+                #str_c("output/", dte, "_kenya_census_map_crops.jpeg"),
+       dpi = "retina",
+       device = "jpeg", 
+       scale = .9, 
+       units = "in")
+
+
+```
+
+
