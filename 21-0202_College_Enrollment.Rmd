@@ -15,7 +15,8 @@ library(tidytuesdayR)
 library(here)
 library(janitor)
 library(extrafont)
-# library(scales)
+library(scales)
+library(ggsci)
 # library(ggtext)
 # library(patchwork)
 
@@ -28,10 +29,64 @@ here::i_am("21-0202_College_Enrollment.Rmd")
 ```{r get data}
 tt <- tidytuesdayR::tt_load("2021", week = 6)
 
-hs_students <- tt$hs_students
+hs_students_raw <- tt$hs_students
 
 ```
 
+## Clean
+
+Data adapted from this sheet:
+https://nces.ed.gov/programs/digest/d16/tables/dt16_104.10.asp
+
+```{r initial clean}
+hs_students <- 
+  hs_students_raw %>% 
+  janitor::clean_names() %>%
+  # original d
+  filter(!is.na(total)) %>% 
+  select(-contains("standard_error")) %>% 
+  # a few rows have footnotes in original data, which appear here at end of number (e.g., 19103 is year 1910 with footnote 3)
+  mutate(total = parse_number(str_sub(total, end = 4L)))
+```
+
+
+```{r renames mutates}
+hs_students <- 
+  hs_students %>% 
+  rename(year = total, 
+         total = total_percent_of_all_persons_age_25_and_over, 
+         white = white1, 
+         black = black1, 
+         asian = asian_pacific_islander_asian, 
+         pacific_islander = asian_pacific_islander_pacific_islander
+         ) %>% 
+  # replace dashes with zeroes
+  mutate(across(.fns = ~ if_else(. == "—", "0", as.character(.)))) %>% 
+  # convert cols to numeric
+  mutate(across(.fns = parse_number)) %>% 
+  mutate(year = as.integer(year)) %>% 
+  # convert percentages to be between 0 and 1
+  # I'll leverage the scales pkg in plots to convert back
+  mutate(across(where(is_double), ~ . / 100))
+
+```
+
+Data is split in interesting year intervals 
+
+- By decade from 1910 to 1960. 1910, 1920, and 1930 are estimates from a reverse projection of 1940 census data on education by age. Other years are probably the data that were collected at the time of the census. 
+
+- Every five years from 1970 through 1985. My guess is that the census bureau starting being able to collect, aggregate, and release more data around this time. 
+
+- Starting with 1985 there is a row for every year (through to end of dataset in 2016)
+
+To make comparisons easier, I'll filter down to just data from years 1985 forward (yearly data).
+
+
+```{r filter >= 1985}
+hs_students <- 
+  hs_students %>% 
+  filter(year >= 1985)
+```
 
 
 ## Investigate
@@ -42,8 +97,30 @@ hs_students <- tt$hs_students
 
 ## Wrangle
 
+Let's pivot longer for each of these variables so we can then plot them easier. 
+
 
 ```{r}
+hs_students_long <- 
+  hs_students %>% 
+  pivot_longer(-year) %>% 
+  filter(value != 0, 
+         # We'll plot on the "asian" and "pacific islander" separately, so remove the combined total
+         !str_detect(name, 'total_asian_pacific_islander')) %>% 
+  filter(name != "total")
+
+names_plot_display <- 
+  distinct(hs_students_long, name) %>% 
+  mutate(name_disp = str_to_title(str_replace_all(name, "_", " ")),
+         name_disp = str_replace(name_disp, "Indian Alaska", "Indian /\nAlaska"),
+         name_disp = str_replace(name_disp, "Race", "Races"),
+         # create factor as same order as they appear in original data
+         name_disp = factor(name_disp, levels = name_disp)
+         )
+  
+hs_students_long <- 
+  hs_students_long %>% 
+  left_join(names_plot_display, by = "name")
 
 ```
 
@@ -52,6 +129,48 @@ hs_students <- tt$hs_students
 ## Plot
 
 ```{r}
+plot_hs <-
+  hs_students_long %>% 
+  ggplot(aes(x = year, y = value, color = fct_reorder2(name_disp, year, value, .desc = TRUE))) +
+  geom_line(size = 1) +
+  geom_point(data = filter(hs_students_long, year == 2016)) + 
+  scale_y_continuous(labels = scales::label_percent(accuracy = 1), 
+                     breaks = seq(0, 1, .1),
+                     minor_breaks = NULL, 
+                     limits = c(0.45, 1)) +
+  scale_x_continuous(breaks = seq(1985, 2020, 5), 
+                     minor_breaks = NULL, 
+                     expand = expansion(add = c(0, 1))) + 
+  theme(legend.position = "right", 
+        legend.text = element_text(family = "Ubuntu Condensed"),
+        legend.text.align = 0,
+        legend.title.align = 0.5,
+        
+        text = element_text(family = "Ubuntu"), 
+        
+        axis.title.x = element_text(margin = margin(7, 0, 0, 0)),
+        axis.title.y = element_text(margin = margin(0, 7, 0, 0)),
+        axis.text = element_text(family = "Ubuntu Mono", size = 10), 
+        
+        plot.title.position = "plot",
+        plot.title = element_text(size = 14, face = "bold"),
+        plot.subtitle = element_text(size = 8), 
+        plot.caption.position = "plot",
+        plot.caption = element_text(size = 7), 
+        
+        panel.background = element_rect(fill = "gray96"), 
+        panel.grid = element_line(color = "gray80"),
+        
+        plot.margin = margin(rep(10, 4))
+        ) + 
+  guides(color = guide_legend(override.aes = list(size = 4, shape = NA))) + 
+  labs(y = "Pct Completed\nHigh School", 
+       x = "Year", 
+       title = "Disparities in U.S. High School Completion Rates Continue", 
+       subtitle = "\nWhile all racial/ethnic groups have increased their high school completion rates since 1985 for persons age 25 and over,\n    many disparities continue to persist.  In particular, those identified as Hispanic by the U.S. Census Bureau still lag far\n    behind other groups (as of 2016).\n\nData for years prior to 1993 are for persons with 4 or more years of high school.\nData for later years are for high school completers (i.e., diploma or equivalent GED).\n",
+       color = "Race / Ethnicity", 
+       caption = "Plot by @greufek\nOriginal Data from National Center for Education Statistics (NCES) \nData provided via Data.World and Tidy Tuesday")
+  
 
 ```
 
@@ -60,13 +179,14 @@ hs_students <- tt$hs_students
 ```{r save plot}
 dte <- Sys.Date()
 
-ggsave(plot = last_plot(),
-       filename = here("21-0126_Plastic_Pollution", "output", str_c(dte, "_plastic_pollution_.jpeg")), 
-                #str_c("output/", dte, "_kenya_census_map_crops.jpeg"),
-       dpi = "retina",
+ggsave(plot = plot_hs,
+       filename = here("21-0202_College_Enrollment/output", str_c(dte, "_high_school_completion_rates.jpeg")), 
+       dpi = "print",
        device = "jpeg", 
-       scale = .9, 
-       units = "in")
+       height = 4, 
+       width = 4 * 1.618, 
+       units = "in"
+       )
 
 
 ```
