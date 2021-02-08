@@ -129,7 +129,7 @@ hs_students_long <-
 ## Plot
 
 ```{r}
-plot_hs <-
+# plot_hs <-
   hs_students_long %>% 
   ggplot(aes(x = year, y = value, color = fct_reorder2(name_disp, year, value, .desc = TRUE))) +
   geom_line(size = 1) +
