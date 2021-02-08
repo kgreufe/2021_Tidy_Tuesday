@@ -16,7 +16,7 @@ library(here)
 library(janitor)
 library(extrafont)
 library(scales)
-library(ggsci)
+# library(ggsci)
 # library(ggtext)
 # library(patchwork)
 
@@ -164,10 +164,10 @@ plot_hs <-
         plot.margin = margin(rep(10, 4))
         ) + 
   guides(color = guide_legend(override.aes = list(size = 4, shape = NA))) + 
-  labs(y = "Pct Completed\nHigh School", 
+  labs(y = "%  Completed\nHigh School", 
        x = "Year", 
        title = "Disparities in U.S. High School Completion Rates Continue", 
-       subtitle = "\nWhile all racial/ethnic groups have increased their high school completion rates since 1985 for persons age 25 and over,\n    many disparities continue to persist.  In particular, those identified as Hispanic by the U.S. Census Bureau still lag far\n    behind other groups (as of 2016).\n\nData for years prior to 1993 are for persons with 4 or more years of high school.\nData for later years are for high school completers (i.e., diploma or equivalent GED).\n",
+       subtitle = "\nWhile all racial/ethnic groups have increased their high school completion rates since 1985 for persons age 25 and over,\n    many significant disparities continue to persist between groups.\n\nIn particular, those identified as Hispanic by the U.S. Census Bureau still have much lower high school completion rates\n    compared to other groups (as of 2016).\n\nData for years prior to 1993 are for persons with 4 or more years of high school.\nData for later years are for high school completers (i.e., diploma conferred or equivalent GED).\n",
        color = "Race / Ethnicity", 
        caption = "Plot by @greufek\nOriginal Data from National Center for Education Statistics (NCES) \nData provided via Data.World and Tidy Tuesday")
   
@@ -177,7 +177,7 @@ plot_hs <-
 ## Save plot 
 
 ```{r save plot}
-dte <- Sys.Date()
+dte <- "21-0202"
 
 ggsave(plot = plot_hs,
        filename = here("21-0202_College_Enrollment/output", str_c(dte, "_high_school_completion_rates.jpeg")), 
