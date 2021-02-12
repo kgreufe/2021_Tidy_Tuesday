@@ -20,7 +20,7 @@ library(scales)
 # library(ggtext)
 # library(patchwork)
 
-here::i_am("21-0202_College_Enrollment.Rmd")
+here::i_am("21-0209_Wealth_Income/21-0202_College_Enrollment.Rmd")
 
 ```
 
