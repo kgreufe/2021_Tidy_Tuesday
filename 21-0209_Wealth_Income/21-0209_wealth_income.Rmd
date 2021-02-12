@@ -20,7 +20,7 @@ library(scales)
 # library(ggtext)
 # library(patchwork)
 
-here::i_am("21-0209_wealth_income.Rmd")
+here::i_am("21-0209_Wealth_Income/21-0209_wealth_income.Rmd")
 
 ```
 
@@ -29,16 +29,42 @@ here::i_am("21-0209_wealth_income.Rmd")
 ```{r get data}
 tt <- tidytuesdayR::tt_load("2021", week = 7)
 
-
+income_mean <- tt$income_mean
 
 ```
 
 ## Clean
 
+```{r}
+
+```
+
 
 ## Investigate
 
 ```{r}
+tt$student_debt %>% 
+  ggplot(aes(year, loan_debt, color = race)) +
+  geom_line()
+
+tt$income_distribution %>% 
+  filter(str_detect(race, regex("all race", ignore_case = TRUE))) %>%
+  ggplot(aes(year, income_distribution, color = fct_reorder2(income_bracket, year, income_distribution))) + 
+  geom_line() + 
+  labs(color = "income bracket")
+
+tt$home_owner %>% 
+  ggplot(aes(year, home_owner_pct, color = race)) + 
+  geom_line()
+
+income_mean %>% 
+  filter(str_detect(dollar_type, "2019"), 
+         str_detect(race, "All Races")) %>% 
+  group_by(year) %>% 
+  mutate(pct = income_dollars / sum(income_dollars)) %>% 
+  ggplot(aes(year, income_dollars, color = fct_reorder2(income_quintile, year, income_dollars))) + 
+  geom_line() 
+  
 
 ```
 
@@ -53,6 +79,20 @@ tt <- tidytuesdayR::tt_load("2021", week = 7)
 ## Plot
 
 ```{r}
+income_mean %>% 
+  filter(str_detect(dollar_type, "2019"), 
+         str_detect(race, "All Races")) %>% 
+  group_by(year) %>% 
+  mutate(pct = income_dollars / sum(income_dollars)) %>% 
+  ggplot(aes(year, income_dollars, color = fct_reorder2(income_quintile, year, income_dollars))) + 
+  geom_line(size = 1) +
+  geom_point(data = filter(income_mean, year == 2019, race == "All Races"), size = 2) +
+  guides(color = guide_legend(override.aes = list(size = 4, shape = NA))) +
+  labs(color = "Income Quintile") + 
+  scale_y_continuous(labels = scales::label_dollar())
+  scale_color_brewer(palette = "Dark2")
+  ggsci::scale_color_aaas()
+
 
 ```
 
