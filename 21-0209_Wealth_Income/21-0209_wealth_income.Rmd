@@ -145,13 +145,13 @@ plot_final <-
         plot.title = element_text(size = 10, family = "Ubuntu")
   ) &
   plot_annotation(title = "The Wealthy Are Getting Wealthier", 
-                  subtitle = "\nSince 1967, the group consisting of the top 5% of all earners in the US have increased their share of wealth \n    both in absolute terms of mean income per group and as a percentange of earnings across quintile groupings.\n\nDollar amounts normalized to 2019",
+                  subtitle = "\nSince 1967, the group consisting of the top 5% of all earners in the US have increased their share of wealth \n    both in absolute terms of mean income per group and as a percentange of earnings across quintile groupings.\n\nDollar amounts normalized to 2019.",
                   caption = "Plot by @greufek\nOriginal Data from the Urban Institute and US Census Bureau\nData accessed via Tidy Tuesday", 
                   theme = theme(plot.background = element_rect(fill = "seashell2"), 
                                 text = element_text(family = "Ubuntu"), 
                                 plot.caption = element_text(size = 8), 
                                 plot.title = element_text(size = 16), 
-                                plot.subtitle = element_text(family = "Ubuntu Thin", size = 10), 
+                                plot.subtitle = element_text(family = "Ubuntu Thin", size = 11), 
                                 plot.margin = unit(c(5, 2.5, 2.5, 2.5), "mm"))
   ) 
 
