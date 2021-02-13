@@ -168,10 +168,10 @@ dte <- "21-0209"
 ggsave(plot = plot_final,
        filename = here("21-0209_Wealth_Income/output", str_c(dte, "_wealth_quintiles_comparison.jpeg")),
        dpi = "retina",
-       device = "jpeg",
-       height = 4,
-       width = 4 * 1.618,
-       units = "in"
+       device = "jpeg"
+       # height = 4,
+       # width = 4 * 1.618,
+       # units = "in"
 )
 
 
