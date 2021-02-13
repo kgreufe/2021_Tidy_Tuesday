@@ -18,7 +18,7 @@ library(extrafont)
 library(scales)
 # library(ggsci)
 # library(ggtext)
-# library(patchwork)
+library(patchwork)
 
 here::i_am("21-0209_Wealth_Income/21-0209_wealth_income.Rmd")
 
@@ -64,13 +64,19 @@ income_mean %>%
   mutate(pct = income_dollars / sum(income_dollars)) %>% 
   ggplot(aes(year, income_dollars, color = fct_reorder2(income_quintile, year, income_dollars))) + 
   geom_line() 
-  
+
 
 ```
 
 ## Wrangle
 
 ```{r}
+income_mean <- 
+  income_mean %>% 
+  filter(str_detect(dollar_type, "2019"), 
+         str_detect(race, "All Races")) %>% 
+  group_by(year) %>% 
+  mutate(pct = income_dollars / sum(income_dollars))
 
 ```
 
@@ -79,36 +85,94 @@ income_mean %>%
 ## Plot
 
 ```{r}
-income_mean %>% 
-  filter(str_detect(dollar_type, "2019"), 
-         str_detect(race, "All Races")) %>% 
-  group_by(year) %>% 
-  mutate(pct = income_dollars / sum(income_dollars)) %>% 
+
+
+plot_dollars <- 
+  income_mean %>% 
   ggplot(aes(year, income_dollars, color = fct_reorder2(income_quintile, year, income_dollars))) + 
-  geom_line(size = 1) +
-  geom_point(data = filter(income_mean, year == 2019, race == "All Races"), size = 2) +
-  guides(color = guide_legend(override.aes = list(size = 4, shape = NA))) +
-  labs(color = "Income Quintile") + 
-  scale_y_continuous(labels = scales::label_dollar())
-  scale_color_brewer(palette = "Dark2")
-  ggsci::scale_color_aaas()
+  geom_point(data = filter(income_mean, year == 2019, race == "All Races"), size = 3) +
+  scale_y_continuous(labels = scales::label_dollar(), 
+                     minor_breaks = NULL, 
+                     expand = expansion(mult = c(0.05, 0.1))) + 
+  labs(y = "$USD", 
+       title = "Mean Income")
+
+plot_pct <- 
+  income_mean %>% 
+  ggplot(aes(year, pct, color = fct_reorder2(income_quintile, year, pct))) + 
+  geom_point(data = filter(income_mean, year == 2019, race == "All Races"), size = 3) + 
+  scale_y_continuous(labels = scales::label_percent(), 
+                     minor_breaks = NULL, 
+                     expand = expansion(mult = c(0.05, 0.1))) + 
+  labs(y = "%", 
+       title = "Percent Share")
 
 
+plots_list <- list(dollars = plot_dollars, pct = plot_pct)
+
+plots_list <- 
+  map(plots_list, 
+      .f = ~ .x + 
+        geom_line(size = 1) +
+        guides(color = guide_legend(override.aes = list(size = 4, shape = NA),
+                                    nrow = 1)) +
+        scale_color_brewer(palette = "Dark2") + 
+        scale_x_continuous(breaks = seq(1960, 2020, 10), 
+                           minor_breaks = NULL) + 
+        theme(text = element_text(family = "Ubuntu"), 
+              axis.text = element_text(family = "Ubuntu Mono"), 
+              axis.title = element_text(size = 10), 
+              axis.title.y = element_text(margin = margin(r = 8)), 
+              axis.title.x = element_text(margin = margin(t = 8)),
+              legend.position = "bottom", 
+              legend.title = element_text(margin = margin(r = 6)), 
+              legend.text = element_text(margin = margin(r = 3)), 
+              panel.grid.major = element_line(color = "gray75"),
+              panel.background = element_rect(fill = "seashell1"), 
+              plot.background = element_rect(fill = "seashell2"), 
+              legend.background = element_rect(fill = "seashell1")
+        ) +
+        labs(color = "Income Quintile", 
+             x = "Year") 
+  )
+
+
+plot_final <- 
+  (plots_list$dollars | plots_list$pct) +
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom", 
+        plot.background = element_rect(color = "seashell2", linetype = "solid"), 
+        plot.title = element_text(size = 10, family = "Ubuntu")
+  ) &
+  plot_annotation(title = "The Wealthy Are Getting Wealthier", 
+                  subtitle = "\nSince 1967, the group consisting of the top 5% of all earners in the US have increased their share of wealth \n    both in absolute terms of mean income per group and as a percentange of earnings across quintile groupings.\n\nDollar amounts normalized to 2019",
+                  caption = "Plot by @greufek\nOriginal Data from the Urban Institute and US Census Bureau\nData accessed via Tidy Tuesday", 
+                  theme = theme(plot.background = element_rect(fill = "seashell2"), 
+                                text = element_text(family = "Ubuntu"), 
+                                plot.caption = element_text(size = 8), 
+                                plot.title = element_text(size = 16), 
+                                plot.subtitle = element_text(family = "Ubuntu Thin", size = 10), 
+                                plot.margin = unit(c(5, 2.5, 2.5, 2.5), "mm"))
+  ) 
+
+
+plot_final
 ```
+
 
 ## Save plot 
 
-```{r save plot, eval=FALSE}
+```{r save plot, eval=TRUE}
 dte <- "21-0209"
 
-ggsave(plot = plot_hs,
-       filename = here("21-0209_Wealth_Income/output", str_c(dte, "_.jpeg")), 
-       dpi = "print",
+ggsave(plot = plot_final,
+       filename = here("21-0209_Wealth_Income/output", str_c(dte, "_wealth_quintiles_comparison_.jpeg")), 
+       dpi = "retina",
        device = "jpeg"
        # height = 4, 
        # width = 4 * 1.618, 
        # units = "in"
-       )
+)
 
 
 ```
