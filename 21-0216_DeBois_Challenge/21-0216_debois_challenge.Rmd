@@ -1,0 +1,80 @@
+---
+title: ''
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+options(scipen = 999)
+
+library(tidyverse)
+library(tidytuesdayR)
+library(here)
+# library(janitor)
+# library(extrafont)
+# library(scales)
+# library(ggsci)
+# library(ggtext)
+# library(patchwork)
+
+here::i_am("21-0216_DuBois_Challenge/21-0216_dubois_challenge.Rmd")
+
+```
+
+## Get Data
+
+```{r get data}
+tt <- tidytuesdayR::tt_load("2021", week = 8)
+
+
+
+```
+
+## Clean
+
+```{r}
+
+```
+
+
+## Investigate
+
+```{r}
+
+```
+
+## Wrangle
+
+```{r}
+
+```
+
+
+## Plot
+
+```{r}
+
+```
+
+
+## Save plot 
+
+```{r save plot, eval=FALSE}
+dte <- "21-0216"
+
+ggsave(plot = plot_final,
+       filename = here("21-0216_DuBois_Challenge/output", str_c(dte, "_.jpeg")),
+       dpi = "retina",
+       device = "jpeg"
+       # height = 4,
+       # width = 4 * 1.618,
+       # units = "in"
+)
+
+
+```
+
+
