@@ -62,6 +62,8 @@ georgia_pop <-
 ## Plot
 
 ```{r}
+plot_color = "#e1cfb7"
+
 georgia_pop %>% 
   ggplot(aes(x = Year, y = value)) + 
   # geom_line(aes(linetype = name)) +
@@ -84,11 +86,11 @@ georgia_pop %>%
         axis.text.y = element_text(margin = margin(r = 5)), 
         axis.title.x = element_text(margin = margin(t = 25), size = 7),
         legend.position = "bottom", 
-        legend.background = element_rect(fill = "#e1cfb7"),
-        legend.key = element_rect(fill = "#e1cfb7"), 
+        legend.background = element_rect(fill = "plot_color"),
+        legend.key = element_rect(fill = "plot_color"), 
         legend.key.width = unit(2.5, "cm"),
-        plot.background = element_rect(fill = "#e1cfb7", color = "#e1cfb7"), 
-        panel.background = element_rect(fill = "#e1cfb7", color = "#e1cfb7"), 
+        plot.background = element_rect(fill = "plot_color", color = "plot_color"), 
+        panel.background = element_rect(fill = "plot_color", color = "plot_color"), 
         panel.grid = element_line(color = "#d39b79"), 
         panel.border = element_rect(color = "black", fill = NA), 
         plot.title = element_text(hjust = 0.5, margin = margin(b = 20, t = 20), 
@@ -97,7 +99,6 @@ georgia_pop %>%
         plot.margin = unit(rep(5, 4), "mm"), 
         aspect.ratio = 1.4
   )  
-  # guides(linetype = guide_legend(override.aes = list(size = 0.2)))
 
 
 # use grid locator to help get idea of where brackets should go
