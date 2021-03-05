@@ -15,6 +15,7 @@ library(tidyverse)
 library(tidytuesdayR)
 library(here)
 library(extrafont)
+library(ggthemr)
 # library(janitor)
 # library(scales)
 # library(ggsci)
@@ -36,29 +37,132 @@ tt <- tidytuesdayR::tt_load("2021", week = 10)
 
 ## Clean
 
-
-
 ```{r}
-
+youtube <- tt$youtube %>% select(-contains("url"), 
+                                 -kind, -etag, -thumbnail, 
+                                 -channel_title, -category_id, 
+                                 -favorite_count)
 ```
 
 
 ## Investigate
 
 ```{r}
+brand_categories <- 
+  youtube %>% 
+  select(year, brand, where(is.logical)) %>%
+  mutate(id = row_number()) %>% 
+  rowwise() %>% 
+  mutate(none = !as.logical(sum(c_across(where(is.logical)))) ) %>% 
+  ungroup() %>% 
+  relocate(id) %>% 
+  pivot_longer(where(is.logical)) %>% 
+  filter(value == TRUE)
+
+brand_categories %>% 
+  ggplot(aes(brand, name)) + 
+  geom_count()
+
+brand_categories %>% 
+  ggplot(aes(year, color = name)) + 
+  geom_freqpoly() + 
+  facet_wrap(~ brand)
+
+
+youtube %>% 
+  mutate(broad_cateogry = case_when(
+    brand == "Toyota" ~ "car",
+    brand == "Hynudai" ~ "car",
+    brand == "Kia" ~ "car",
+    brand == "Bud Light" ~ "beer",
+    brand == "Budweiser" ~ "beer",
+    brand == "Coca-Cola" ~ "soda",
+    brand == "Pepsi" ~ "soda",
+    brand == "Doritos" ~ "chips",
+    brand == "E-Trade" ~ "financial", 
+    brand == "NFL" ~ "sports",
+    TRUE ~ "other"
+  )) %>% 
+  count(year, broad_cateogry) %>% 
+  complete(year, broad_cateogry, fill = list(n = 0)) %>% 
+  ggplot(aes(year, n, color = broad_cateogry)) +
+  geom_line()
+
+
+# I don't trust these YouTube numbers. I'm betting some of them have been up longer than others and thus have much larger view counts, etc.
+# e.g., look at Bud Light vs Budweiser for 2000 -- the discrepancy is massive
+youtube %>% 
+  group_by(year, brand) %>% 
+  summarize(across(contains("count"), ~ sum(., na.rm = TRUE)), .groups = "drop") %>% 
+  filter(view_count > 0)
+
+
+brand_categories %>% 
+  group_by(year, name) %>% 
+  summarize(n = sum(value), .groups = "drop") %>% 
+  complete(year, name, fill = list(n = 0)) %>%
+  filter(name != "none") %>%
+  ggplot(aes(year, n, color = name)) + 
+  geom_line(size = 1) + 
+  geom_smooth(se = FALSE, color = "black") +
+  facet_wrap(~ name, nrow = 1) + 
+  theme(legend.position = "none") 
+
+
 
 ```
 
-## Wrangle
-
-```{r}
-
-```
 
 
 ## Plot
 
 ```{r}
+ggthemr::ggthemr("light")
+
+year_categories <- 
+  brand_categories %>% 
+  group_by(year, name) %>% 
+  summarize(n = sum(value), .groups = "drop") %>% 
+  complete(year, name, fill = list(n = 0)) %>%
+  filter(name != "none")
+
+diff_calc <- 
+  inner_join(
+    x = filter(year_categories, year == min(year)) %>% select(-year), 
+    y = filter(year_categories, year == max(year)) %>% select(-year),
+    by = c("name")
+  ) %>%  
+  mutate(diff = `n.y` - `n.x`) %>% 
+  select(name, diff)
+
+year_categories <- 
+  year_categories %>% 
+  left_join(diff_calc, by = "name")
+
+plot_final <- 
+  year_categories %>% 
+  mutate(name = str_to_title(str_replace_all(name, "_", " "))) %>% 
+  ggplot(aes(year, n, color = name)) + 
+  geom_line(size = 1.25) + 
+  geom_smooth(se = FALSE, size = 1, color = "black") +
+  facet_wrap(~ fct_reorder(name, n, max, .desc = TRUE), nrow = 2) + 
+  scale_x_continuous(breaks = seq(1995, 2025, 10), minor_breaks = NULL) +
+  # theme_minimal() + 
+  theme(legend.position = "none", 
+        text = element_text(family = "Ubuntu Light"),
+        plot.caption = element_text(size = 8), 
+        plot.title = element_text(family = "Ubuntu", face = "bold", size = 18), 
+        strip.text = element_text(face = "bold"), 
+        axis.title = element_text(face = "bold")
+        # axis.text.x = element_blank(), 
+        # axis.title.x = element_blank()
+  ) + 
+  labs(y = "# of Ads", 
+       x = "Year", 
+       caption = "Plot by @greufek\nOriginal Data from superbowl-ads.com and FiveThirtyEight\nData accessed via Tidy Tuesday", 
+       title = "Super Bowl Ads Are Including More Celebrities and Fewer Animals", 
+       subtitle = "\nCelebrity appearances increased the most in usage from the 223 ads aired by the top 10 brands in Super Bowls from 2000-2020.\n\nAds containing animals or leveraging sex appeal no longer appear to be as common a marketing strategy as they once were.\n\nFunny ads, while still popular overall, have dropped off significantly in usage as well.\n") +
+  ggthemr::scale_colour_ggthemr_d()
 
 
 
@@ -69,14 +173,14 @@ tt <- tidytuesdayR::tt_load("2021", week = 10)
 
 
 
-```{r save plot, eval=FALSE}
+```{r save plot, eval=TRUE}
 dte <- "21-0302"
 
 ggsave(plot = plot_final,
-       filename = here("21-0302_Superbowl_Commercials/output", str_c(dte, ".jpeg")),
+       filename = here("21-0302_Superbowl_Commercials/output", str_c(dte, "_super_bowl_ads.jpeg")),
        dpi = "retina",
-       device = "jpeg"
-       # height = 4,
+       device = "jpeg" 
+       # , height = 4,
        # width = 4 * 1.618,
        # units = "in"
 )
