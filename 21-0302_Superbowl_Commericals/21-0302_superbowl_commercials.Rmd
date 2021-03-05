@@ -1,0 +1,87 @@
+---
+title: ''
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# I'm not a fan of scientific notation, so I turn that off
+options(scipen = 999)
+
+library(tidyverse)
+library(tidytuesdayR)
+library(here)
+library(extrafont)
+# library(janitor)
+# library(scales)
+# library(ggsci)
+# library(patchwork)
+
+here()
+here::i_am("21-0302_Superbowl_Commercials/21-0302_superbowl_commercials.Rmd")
+
+```
+
+## Get Data
+
+```{r get data}
+tt <- tidytuesdayR::tt_load("2021", week = 10)
+
+
+
+```
+
+## Clean
+
+
+
+```{r}
+
+```
+
+
+## Investigate
+
+```{r}
+
+```
+
+## Wrangle
+
+```{r}
+
+```
+
+
+## Plot
+
+```{r}
+
+
+
+```
+
+
+## Save plot 
+
+
+
+```{r save plot, eval=FALSE}
+dte <- "21-0302"
+
+ggsave(plot = plot_final,
+       filename = here("21-0302_Superbowl_Commercials/output", str_c(dte, ".jpeg")),
+       dpi = "retina",
+       device = "jpeg"
+       # height = 4,
+       # width = 4 * 1.618,
+       # units = "in"
+)
+
+
+```
+
+
